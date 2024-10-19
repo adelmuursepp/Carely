@@ -1,0 +1,263 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    text-align: center;
+}
+
+.logo img {
+    margin-bottom: 50px;
+}
+
+.buttons {
+    margin-top: 20px;
+}
+
+.btn {
+    padding: 15px 30px;
+    font-size: 18px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    margin: 10px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.btn:hover {
+    background-color: #0056b3;
+}
+/* General body styling */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* Container for Sign In page */
+.signin-container {
+    display: flex;
+    width: 80%;
+    max-width: 1000px;
+    background-color: white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Left side: Logo */
+.signin-logo {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f0f0f0;
+}
+
+/* Right side: Sign In form */
+.signin-form {
+    flex: 1;
+    padding: 40px;
+}
+
+.signin-form h2 {
+    color: #333;
+    margin-bottom: 30px;
+}
+
+.signin-form label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.signin-form input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.signin-form button {
+    width: 100%;
+    padding: 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.signin-form button:hover {
+    background-color: #0056b3;
+}
+/* General body styling */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* Container for Sign Up page */
+.signup-container {
+    display: flex;
+    width: 80%;
+    max-width: 1000px;
+    background-color: white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Left side: Logo */
+.signup-logo {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Right side: Sign Up form */
+.signup-form {
+    flex: 1;
+    padding: 40px;
+}
+
+.signup-form h2 {
+    color: #333;
+    margin-bottom: 30px;
+}
+
+.signup-form label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.signup-form input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.signup-form button {
+    width: 100%;
+    padding: 15px;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.signup-form button:hover {
+    background-color: #ff8533;
+}
+/* Home Page styling */
+/* Home Page styling */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(to right, #ffcccc, #cceeff);
+}
+
+/* Container for the Home Page */
+.home-container {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+/* Centered logo */
+.logo-center {
+    margin-bottom: 20px;  /* Adjusted margin */
+}
+
+/* Options styling */
+.options {
+    display: flex;  /* Change to flex to align items horizontally */
+    justify-content: center;  /* Center the options */
+    gap: 20px;  /* Spacing between options */
+}
+
+.option {
+    padding: 15px 30px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 18px;
+    transition: background-color 0.3s ease;
+}
+
+.option:hover {
+    background-color: #0056b3;
+}
+/* Create Profile Page styling */
+.create-profile-container {
+    background: linear-gradient(to right, #ffcccc, #cceeff); /* Same background */
+    padding: 40px;
+    border-radius: 10px;
+    text-align: center;
+    width: 400px; /* Fixed width */
+    margin: 0 auto; /* Center the container */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+}
+
+h2 {
+    margin-bottom: 20px;
+}
+
+input, select {
+    width: 90%; /* Full width with some margin */
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    border: 1px solid #ccc; /* Light border */
+}
+
+button {
+    padding: 10px 20px;
+    background-color: #ff6600; /* Same button color */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #ff8533; /* Darker shade on hover */
+}

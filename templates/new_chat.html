@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat with Assistant</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f2f2f2;
+      }
+
+      .chat-container {
+        width: 500px;
+        margin: 50px auto;
+        background-color: #fff;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        position: relative;
+      }
+
+      .chat-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .chat-header h2 {
+        margin: 0 0 0 10px;
+      }
+
+      .person-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+      }
+
+      .chat-input {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .chat-input button {
+        padding: 10px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      .chat-input button:hover {
+        background-color: #0056b3;
+      }
+
+      .icon-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        outline: none;
+        font-size: 28px;
+      }
+
+      .icon-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      #loader {
+        display: none;
+        margin-left: 10px;
+        border: 4px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 4px solid #3498db;
+        width: 20px;
+        height: 20px;
+        animation: spin 2s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      audio {
+        display: none;
+        margin-top: 20px;
+      }
+
+      #status {
+        margin-left: 10px;
+      }
+
+      .video-pane {
+        width: 320px;
+        background-color: #000;
+        border-radius: 5px;
+        overflow: hidden;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .video-pane video {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chat-container">
+      <div class="chat-header">
+        <img
+          src="../static/images/person-icon.jpeg"
+          alt="Person"
+          class="person-icon"
+        />
+        <h2>Chat with Ishika</h2>
+      </div>
+
+      <div class="chat-input">
+        <button id="recordButton" class="icon-btn" onclick="toggleRecording()">
+          🎤 Start Recording
+        </button>
+        <div id="loader"></div>
+        <span id="status">Not recording...</span>
+      </div>
+
+      <audio id="audio-player" controls></audio>
+
+      <div
+        class="video-pane"
+        style="position: absolute; top: 20px; right: -340px"
+      >
+        <video
+          id="video-element"
+          autoplay
+          muted
+          width="320"
+          height="240"
+        ></video>
+      </div>
+      <div id="emotions-box" style="margin-top: 10px; text-align: center">
+        <p><strong>Top Emotions:</strong></p>
+      </div>
+
+      <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+        const recordButton = document.getElementById("recordButton");
+        const loader = document.getElementById("loader");
+        const statusText = document.getElementById("status");
+
+        function toggleRecording() {
+          if (isRecording) {
+            stopRecording();
+          } else {
+            startRecording();
+          }
+        }
+
+        async function startRecording() {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          });
+          mediaRecorder = new MediaRecorder(stream);
+          mediaRecorder.start();
+          isRecording = true;
+          recordButton.textContent = "🛑 Stop Recording";
+          loader.style.display = "inline-block";
+          statusText.textContent = "Recording...";
+
+          mediaRecorder.ondataavailable = function (event) {
+            audioChunks.push(event.data);
+          };
+
+          mediaRecorder.onstop = function () {
+            const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+            audioChunks = [];
+            sendAudioToBackend(audioBlob);
+          };
+        }
+
+        function stopRecording() {
+          mediaRecorder.stop();
+          isRecording = false;
+          recordButton.textContent = "🎤 Start Recording";
+          statusText.textContent = "Stopped recording.";
+        }
+
+        function sendAudioToBackend(audioBlob) {
+          const formData = new FormData();
+          formData.append("audio", audioBlob, "audio.wav");
+
+          fetch("/audio_to_text", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => {
+              loader.style.display = "none";
+              if (!response.ok) {
+                throw new Error("Network response was not ok");
+              }
+              return response.blob(); // Get the audio blob from the response
+            })
+            .then((audioBlob) => {
+              const audioUrl = URL.createObjectURL(audioBlob);
+              const audioPlayer = document.getElementById("audio-player");
+              audioPlayer.src = audioUrl; // Set the source to the blob URL
+              audioPlayer.style.display = "block"; // Show the audio player
+              audioPlayer.play(); // Play the audio
+            })
+            .catch((error) => {
+              console.error(
+                "There was a problem with the fetch operation:",
+                error
+              );
+            });
+        }
+
+        const API_KEY = "ZG68MoAwkJmO200Jl1EkTKC3SfGNI4r2dpKlA2FjcplK8cE4";
+        const WS_URL = `wss://api.hume.ai/v0/stream/models?apiKey=${API_KEY}`;
+
+        let socket;
+
+        async function startVideoStream() {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+              video: true,
+            });
+            const videoElement = document.getElementById("video-element");
+            videoElement.srcObject = stream;
+            videoElement.play();
+            setupWebSocket();
+            sendFramesPeriodically(videoElement);
+          } catch (error) {
+            console.error("Error accessing webcam:", error);
+          }
+        }
+
+        function setupWebSocket() {
+          socket = new WebSocket(WS_URL);
+
+          socket.onopen = () => console.log("WebSocket connected to Hume AI");
+          socket.onmessage = (event) => handleHumeResponse(event.data);
+          socket.onclose = (event) => console.log("WebSocket closed:", event);
+          socket.onerror = (error) => console.error("WebSocket error:", error);
+        }
+
+        function getFrameAsBase64(video) {
+          const canvas = document.createElement("canvas");
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const context = canvas.getContext("2d");
+          context.drawImage(video, 0, 0, canvas.width, canvas.height);
+          return canvas.toDataURL("image/jpeg").split(",")[1]; // Extract base64 string
+        }
+
+        function sendFramesPeriodically(video) {
+          setInterval(() => {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+              const base64Image = getFrameAsBase64(video);
+              const message = JSON.stringify({
+                models: { face: {} },
+                data: base64Image,
+              });
+              socket.send(message);
+            }
+          }, 1000 / 1); // 5 FPS
+        }
+
+        function displayTopEmotions(predictions) {
+          // Extract emotions from the response
+          const emotions = predictions[0].emotions;
+
+          // Sort emotions by score in descending order and take the top 3
+          const topEmotions = emotions
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 3);
+
+          // Generate HTML content to display the top emotions
+          const emotionList = topEmotions
+            .map(
+              (emotion) =>
+                `<li>${emotion.name}: ${emotion.score.toFixed(2)}</li>`
+            )
+            .join("");
+
+          document.getElementById(
+            "emotions-box"
+          ).innerHTML = `<ul>${emotionList}</ul>`;
+        }
+
+        function handleHumeResponse(data) {
+          try {
+            const response = JSON.parse(data);
+            console.log("Hume AI Response:", response);
+
+            // Assuming the response has 'predictions' array in 'face'
+            const predictions = response.face.predictions;
+
+            displayTopEmotions(predictions);
+          } catch (error) {
+            console.error("Error parsing response:", error);
+          }
+        }
+
+        startVideoStream();
+      </script>
+    </div>
+  </body>
+</html>
