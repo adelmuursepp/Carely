@@ -33,7 +33,7 @@
 
       .chat-container {
         width: 70%;
-        margin: 30px auto;
+        margin: 10px auto;
         background-color: #fff;
         border-radius: 5px;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -158,14 +158,14 @@
   <body>
     <div class="dashboard">
       <div class="all-chats">
-        <div class="chat-container">
+        <div class="chat-container" style="margin-top: 20px">
           <div class="chat-header">
             <img
               src="../static/images/alis2.png"
               alt="Person"
               class="person-icon"
             />
-            <h2>Chat with Mom</h2>
+            <h3 style="margin-left: 10px">Chat with Mom</h3>
           </div>
 
           <div class="chat-input" style="margin-bottom: 20px">
@@ -315,7 +315,7 @@
               alt="Person"
               class="person-icon"
             />
-            <h2>Chat with Adel</h2>
+            <h3 style="margin-left: 10px">Chat with Adel</h3>
           </div>
           <div class="chat-input" style="margin-bottom: 20px">
             <button id="getMemoryButton2">✨ Tell Me About...</button>
@@ -480,22 +480,41 @@
               });
           </script>
         </div>
-        <button
-          style="
-            padding: 10px;
-            background-color: #9fc8b8;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            width: 200px;
-            margin: auto;
-          "
-          onclick="window.location.href='{{ url_for('excercise') }}'"
-        >
-          💪 Daily Challenge
-        </button>
+        <div style="display: flex; width: 500px; margin: auto">
+          <button
+            style="
+              padding: 10px;
+              background-color: #9fc8b8;
+              color: white;
+              border: none;
+              border-radius: 5px;
+              cursor: pointer;
+              font-size: 16px;
+              width: 200px;
+              margin: auto;
+            "
+            onclick="window.location.href='{{ url_for('excercise') }}'"
+          >
+            💪 Daily Challenge
+          </button>
+
+          <button
+            style="
+              padding: 10px;
+              background-color: #9fc8b8;
+              color: white;
+              border: none;
+              border-radius: 5px;
+              cursor: pointer;
+              font-size: 16px;
+              width: 200px;
+              margin: auto;
+            "
+            onclick="window.location.href='tel:+16198212938'"
+          >
+            🧠 Start a Lesson
+          </button>
+        </div>
       </div>
       <div class="video-emotions">
         <p
