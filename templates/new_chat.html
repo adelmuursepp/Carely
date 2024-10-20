@@ -8,6 +8,27 @@
       body {
         font-family: Arial, sans-serif;
         background-color: #f2f2f2;
+        margin: 0;
+      }
+
+      .dashboard {
+        display: flex;
+        height: 100vh;
+      }
+
+      .all-chats {
+        display: flex;
+        flex-direction: column;
+        width: 60%;
+      }
+
+      .video-emotions {
+        display: flex;
+        flex-direction: column;
+        width: 40%;
+        justify-content: center;
+        align-items: center;
+        background-color: #c7c2c2;
       }
 
       .chat-container {
@@ -111,209 +132,261 @@
         height: auto;
         display: block;
       }
+
+      .emotion-box {
+        display: inline-block;
+        padding: 5px 10px;
+        margin: 5px;
+        border-radius: 5px;
+        font-size: 14px;
+        background-color: lightgray;
+        color: black;
+      }
+
+      .emotion-box.negative {
+        background-color: #f8d7da; /* Light red for negative emotions */
+        color: #721c24;
+      }
+
+      .emotions-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
     </style>
   </head>
   <body>
-    <div class="chat-container">
-      <div class="chat-header">
-        <img
-          src="../static/images/person-icon.jpeg"
-          alt="Person"
-          class="person-icon"
-        />
-        <h2>Chat with Ishika</h2>
-      </div>
+    <div class="dashboard">
+      <div class="all-chats">
+        <div class="chat-container">
+          <div class="chat-header">
+            <img
+              src="../static/images/person-icon.jpeg"
+              alt="Person"
+              class="person-icon"
+            />
+            <h2>Chat with Ishika</h2>
+          </div>
 
-      <div class="chat-input">
-        <button id="recordButton" class="icon-btn" onclick="toggleRecording()">
-          🎤 Start Recording
-        </button>
-        <div id="loader"></div>
-        <span id="status">Not recording...</span>
-      </div>
+          <div class="chat-input">
+            <button
+              id="recordButton"
+              class="icon-btn"
+              onclick="toggleRecording()"
+            >
+              🎤 Start Recording
+            </button>
+            <div id="loader"></div>
+            <span id="status">Not recording...</span>
+          </div>
 
-      <audio id="audio-player" controls></audio>
+          <audio id="audio-player" controls></audio>
 
-      <div
-        class="video-pane"
-        style="position: absolute; top: 20px; right: -340px"
-      >
-        <video
-          id="video-element"
-          autoplay
-          muted
-          width="320"
-          height="240"
-        ></video>
-      </div>
-      <div id="emotions-box" style="margin-top: 10px; text-align: center">
-        <p><strong>Top Emotions:</strong></p>
-      </div>
+          <script>
+            let mediaRecorder;
+            let audioChunks = [];
+            let isRecording = false;
+            const recordButton = document.getElementById("recordButton");
+            const loader = document.getElementById("loader");
+            const statusText = document.getElementById("status");
 
-      <script>
-        let mediaRecorder;
-        let audioChunks = [];
-        let isRecording = false;
-        const recordButton = document.getElementById("recordButton");
-        const loader = document.getElementById("loader");
-        const statusText = document.getElementById("status");
-
-        function toggleRecording() {
-          if (isRecording) {
-            stopRecording();
-          } else {
-            startRecording();
-          }
-        }
-
-        async function startRecording() {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-          });
-          mediaRecorder = new MediaRecorder(stream);
-          mediaRecorder.start();
-          isRecording = true;
-          recordButton.textContent = "🛑 Stop Recording";
-          loader.style.display = "inline-block";
-          statusText.textContent = "Recording...";
-
-          mediaRecorder.ondataavailable = function (event) {
-            audioChunks.push(event.data);
-          };
-
-          mediaRecorder.onstop = function () {
-            const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-            audioChunks = [];
-            sendAudioToBackend(audioBlob);
-          };
-        }
-
-        function stopRecording() {
-          mediaRecorder.stop();
-          isRecording = false;
-          recordButton.textContent = "🎤 Start Recording";
-          statusText.textContent = "Stopped recording.";
-        }
-
-        function sendAudioToBackend(audioBlob) {
-          const formData = new FormData();
-          formData.append("audio", audioBlob, "audio.wav");
-
-          fetch("/audio_to_text", {
-            method: "POST",
-            body: formData,
-          })
-            .then((response) => {
-              loader.style.display = "none";
-              if (!response.ok) {
-                throw new Error("Network response was not ok");
+            function toggleRecording() {
+              if (isRecording) {
+                stopRecording();
+              } else {
+                startRecording();
               }
-              return response.blob(); // Get the audio blob from the response
-            })
-            .then((audioBlob) => {
-              const audioUrl = URL.createObjectURL(audioBlob);
-              const audioPlayer = document.getElementById("audio-player");
-              audioPlayer.src = audioUrl; // Set the source to the blob URL
-              audioPlayer.style.display = "block"; // Show the audio player
-              audioPlayer.play(); // Play the audio
-            })
-            .catch((error) => {
-              console.error(
-                "There was a problem with the fetch operation:",
-                error
-              );
-            });
-        }
-
-        const API_KEY = "ZG68MoAwkJmO200Jl1EkTKC3SfGNI4r2dpKlA2FjcplK8cE4";
-        const WS_URL = `wss://api.hume.ai/v0/stream/models?apiKey=${API_KEY}`;
-
-        let socket;
-
-        async function startVideoStream() {
-          try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-              video: true,
-            });
-            const videoElement = document.getElementById("video-element");
-            videoElement.srcObject = stream;
-            videoElement.play();
-            setupWebSocket();
-            sendFramesPeriodically(videoElement);
-          } catch (error) {
-            console.error("Error accessing webcam:", error);
-          }
-        }
-
-        function setupWebSocket() {
-          socket = new WebSocket(WS_URL);
-
-          socket.onopen = () => console.log("WebSocket connected to Hume AI");
-          socket.onmessage = (event) => handleHumeResponse(event.data);
-          socket.onclose = (event) => console.log("WebSocket closed:", event);
-          socket.onerror = (error) => console.error("WebSocket error:", error);
-        }
-
-        function getFrameAsBase64(video) {
-          const canvas = document.createElement("canvas");
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          const context = canvas.getContext("2d");
-          context.drawImage(video, 0, 0, canvas.width, canvas.height);
-          return canvas.toDataURL("image/jpeg").split(",")[1]; // Extract base64 string
-        }
-
-        function sendFramesPeriodically(video) {
-          setInterval(() => {
-            if (socket && socket.readyState === WebSocket.OPEN) {
-              const base64Image = getFrameAsBase64(video);
-              const message = JSON.stringify({
-                models: { face: {} },
-                data: base64Image,
-              });
-              socket.send(message);
             }
-          }, 1000 / 1); // 5 FPS
-        }
 
-        function displayTopEmotions(predictions) {
-          // Extract emotions from the response
-          const emotions = predictions[0].emotions;
+            async function startRecording() {
+              const stream = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+              });
+              mediaRecorder = new MediaRecorder(stream);
+              mediaRecorder.start();
+              isRecording = true;
+              recordButton.textContent = "🛑 Stop Recording";
+              loader.style.display = "inline-block";
+              statusText.textContent = "Recording...";
 
-          // Sort emotions by score in descending order and take the top 3
-          const topEmotions = emotions
-            .sort((a, b) => b.score - a.score)
-            .slice(0, 3);
+              mediaRecorder.ondataavailable = function (event) {
+                audioChunks.push(event.data);
+              };
 
-          // Generate HTML content to display the top emotions
-          const emotionList = topEmotions
-            .map(
-              (emotion) =>
-                `<li>${emotion.name}: ${emotion.score.toFixed(2)}</li>`
-            )
-            .join("");
+              mediaRecorder.onstop = function () {
+                const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+                audioChunks = [];
+                sendAudioToBackend(audioBlob);
+              };
+            }
 
-          document.getElementById(
-            "emotions-box"
-          ).innerHTML = `<ul>${emotionList}</ul>`;
-        }
+            function stopRecording() {
+              mediaRecorder.stop();
+              isRecording = false;
+              recordButton.textContent = "🎤 Start Recording";
+              statusText.textContent = "Stopped recording.";
+            }
 
-        function handleHumeResponse(data) {
-          try {
-            const response = JSON.parse(data);
-            console.log("Hume AI Response:", response);
+            function sendAudioToBackend(audioBlob) {
+              const formData = new FormData();
+              formData.append("audio", audioBlob, "audio.wav");
 
-            // Assuming the response has 'predictions' array in 'face'
-            const predictions = response.face.predictions;
+              fetch("/audio_to_text", {
+                method: "POST",
+                body: formData,
+              })
+                .then((response) => {
+                  loader.style.display = "none";
+                  if (!response.ok) {
+                    throw new Error("Network response was not ok");
+                  }
+                  return response.blob(); // Get the audio blob from the response
+                })
+                .then((audioBlob) => {
+                  const audioUrl = URL.createObjectURL(audioBlob);
+                  const audioPlayer = document.getElementById("audio-player");
+                  audioPlayer.src = audioUrl; // Set the source to the blob URL
+                  audioPlayer.style.display = "block"; // Show the audio player
+                  audioPlayer.play(); // Play the audio
+                })
+                .catch((error) => {
+                  console.error(
+                    "There was a problem with the fetch operation:",
+                    error
+                  );
+                });
+            }
+          </script>
+        </div>
+      </div>
+      <div class="video-emotions">
+        <div class="video-pane" style="">
+          <video
+            id="video-element"
+            autoplay
+            muted
+            width="320"
+            height="240"
+          ></video>
+        </div>
+        <div id="emotions-box" style="margin-top: 10px; text-align: center">
+          <p><strong>Top Emotions:</strong></p>
+        </div>
+        <script>
+          const API_KEY = "ZG68MoAwkJmO200Jl1EkTKC3SfGNI4r2dpKlA2FjcplK8cE4";
+          const WS_URL = `wss://api.hume.ai/v0/stream/models?apiKey=${API_KEY}`;
 
-            displayTopEmotions(predictions);
-          } catch (error) {
-            console.error("Error parsing response:", error);
+          let socket;
+
+          async function startVideoStream() {
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+              });
+              const videoElement = document.getElementById("video-element");
+              videoElement.srcObject = stream;
+              videoElement.play();
+              setupWebSocket();
+              sendFramesPeriodically(videoElement);
+            } catch (error) {
+              console.error("Error accessing webcam:", error);
+            }
           }
-        }
 
-        startVideoStream();
-      </script>
+          function setupWebSocket() {
+            socket = new WebSocket(WS_URL);
+
+            socket.onopen = () => console.log("WebSocket connected to Hume AI");
+            socket.onmessage = (event) => handleHumeResponse(event.data);
+            socket.onclose = (event) => console.log("WebSocket closed:", event);
+            socket.onerror = (error) =>
+              console.error("WebSocket error:", error);
+          }
+
+          function getFrameAsBase64(video) {
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext("2d");
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL("image/jpeg").split(",")[1]; // Extract base64 string
+          }
+
+          function sendFramesPeriodically(video) {
+            setInterval(() => {
+              if (socket && socket.readyState === WebSocket.OPEN) {
+                const base64Image = getFrameAsBase64(video);
+                const message = JSON.stringify({
+                  models: { face: {} },
+                  data: base64Image,
+                });
+                socket.send(message);
+              }
+            }, 1000 / 1); // 5 FPS
+          }
+
+          function displayTopEmotions(predictions) {
+            const emotions = predictions[0].emotions;
+
+            // Sort emotions by score in descending order and take the top 3
+            const topEmotions = emotions
+              .sort((a, b) => b.score - a.score)
+              .slice(0, 3);
+
+            // Clear previous emotions
+            const emotionsBox = document.getElementById("emotions-box");
+            emotionsBox.innerHTML = ""; // Clear previous content
+
+            // Define negative emotions
+            const negativeEmotions = [
+              "Distress",
+              "Anxiety",
+              "Fear",
+              "Shame",
+              "Confusion",
+              "Doubt",
+              "Disappointment",
+              "Sadness",
+              "Embarrassment",
+              "Pain",
+              "Anger",
+              "Horror",
+            ];
+
+            // Create and display emotion boxes
+            topEmotions.forEach((emotion) => {
+              const emotionElement = document.createElement("div");
+              emotionElement.classList.add("emotion-box");
+
+              // Add 'negative' class if the emotion is negative
+              if (negativeEmotions.includes(emotion.name)) {
+                emotionElement.classList.add("negative");
+              }
+
+              emotionElement.textContent = `${emotion.name}: ${(
+                emotion.score * 100
+              ).toFixed(2)} %`;
+              emotionsBox.appendChild(emotionElement);
+            });
+          }
+
+          function handleHumeResponse(data) {
+            try {
+              const response = JSON.parse(data);
+              console.log("Hume AI Response:", response);
+
+              // Assuming the response has 'predictions' array in 'face'
+              const predictions = response.face.predictions;
+
+              displayTopEmotions(predictions);
+            } catch (error) {
+              console.error("Error parsing response:", error);
+            }
+          }
+
+          startVideoStream();
+        </script>
+      </div>
     </div>
   </body>
 </html>
