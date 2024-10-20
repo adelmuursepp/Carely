@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hume API Connection</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f2f2f2;
+        margin: 0;
+      }
+
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 50px;
+      }
+
+      .header {
+        font-size: 24px;
+        margin-bottom: 20px;
+      }
+
+      .api-response {
+        width: 80%;
+        background-color: #fff;
+        border-radius: 5px;
+        padding: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .button {
+        padding: 10px 20px;
+        background-color: #9fc8b8;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-bottom: 20px;
+      }
+
+      .button:hover {
+        background-color: #75a290;
+      }
+
+      pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">Connect to Hume API</div>
+      <button id="fetchButton" class="button">Fetch Data from Hume API</button>
+      <div class="api-response" id="apiResponse">
+        <pre id="output">API response will appear here...</pre>
+      </div>
+    </div>
+
+    <script>
+      const apiKey = "ZG68MoAwkJmO200Jl1EkTKC3SfGNI4r2dpKlA2FjcplK8cE4";
+
+      document.getElementById("fetchButton").addEventListener("click", () => {
+        // API endpoint and parameters
+        const url =
+          "https://api.hume.ai/v0/evi/tools?page_number=0&page_size=2";
+
+        // Make the GET request using fetch
+        fetch(url, {
+          method: "GET",
+          headers: {
+            "X-Hume-Api-Key": apiKey,
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(
+                "Network response was not ok: " + response.statusText
+              );
+            }
+            return response.json();
+          })
+          .then((data) => {
+            // Display the data in the <pre> element
+            document.getElementById("output").textContent = JSON.stringify(
+              data,
+              null,
+              2
+            );
+          })
+          .catch((error) => {
+            console.error(
+              "There was a problem with the fetch operation:",
+              error
+            );
+            document.getElementById("output").textContent =
+              "Error: " + error.message;
+          });
+      });
+    </script>
+  </body>
+</html>

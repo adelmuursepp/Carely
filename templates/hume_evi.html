@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hume EVI Integration</title>
+    <style>
+      /* Add your styles here */
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f2f2f2;
+        margin: 0;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .header {
+        font-size: 24px;
+        margin-bottom: 20px;
+      }
+
+      .button {
+        padding: 10px 20px;
+        background-color: #9fc8b8;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-right: 10px;
+      }
+
+      .button:hover {
+        background-color: #75a290;
+      }
+
+      #status {
+        margin-top: 10px;
+        font-size: 16px;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">Empathic Voice Interface (EVI)</div>
+      <button id="startButton" class="button">🎤 Start Recording</button>
+      <button id="stopButton" class="button" disabled>🛑 Stop Recording</button>
+      <div id="status">Click "Start Recording" to begin.</div>
+    </div>
+
+    <script>
+      // Replace with your actual Hume API key and Secret key
+      const API_KEY = "ZG68MoAwkJmO200Jl1EkTKC3SfGNI4r2dpKlA2FjcplK8cE4"; // ⚠️ Warning: Exposing API keys in client-side code is insecure
+      const SECRET_KEY =
+        "R8H1lC4HgjtHQI0KvIP3bAMzRTPzb2NdSXg9KfXrN2qazvERW5JHIK88A0Wd8p3A"; // ⚠️ Warning: Exposing API keys in client-side code is insecure
+
+      let socket = null;
+      let recorder = null;
+      let audioStream = null;
+      let audioQueue = [];
+      let isPlaying = false;
+      let currentAudio = null;
+
+      async function authenticate() {
+        try {
+          const response = await fetch("https://api.hume.ai/v0/auth", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              api_key: API_KEY,
+              secret_key: SECRET_KEY,
+            }),
+          });
+          const data = await response.json();
+          return data.access_token;
+        } catch (error) {
+          console.error("Error fetching access token:", error);
+        }
+      }
+
+      function getSupportedMimeType() {
+        const mimeTypes = [
+          "audio/webm;codecs=opus",
+          "audio/ogg;codecs=opus",
+          "audio/wav",
+        ];
+        for (const mimeType of mimeTypes) {
+          if (MediaRecorder.isTypeSupported(mimeType)) {
+            return mimeType;
+          }
+        }
+        return "";
+      }
+
+      async function startRecording() {
+        const accessToken = await authenticate();
+        if (!accessToken) {
+          alert("Failed to obtain access token.");
+          return;
+        }
+
+        const configId = null; // Replace with your config ID if you have one
+        const websocketUrl = `wss://api.hume.ai/v0/empowerment/stream?auth_token=${accessToken}&config_id=${configId}`;
+
+        // Open WebSocket connection
+        socket = new WebSocket(websocketUrl);
+
+        socket.onopen = () => {
+          console.log("WebSocket connection opened");
+          document.getElementById("status").textContent = "Recording...";
+          captureAudio();
+        };
+
+        socket.onmessage = (event) => {
+          handleWebSocketMessage(event);
+        };
+
+        socket.onerror = (error) => {
+          console.error("WebSocket error:", error);
+          document.getElementById("status").textContent =
+            "WebSocket error occurred.";
+        };
+
+        socket.onclose = (event) => {
+          console.log("WebSocket closed:", event);
+          document.getElementById("status").textContent =
+            "WebSocket connection closed.";
+        };
+      }
+
+      async function captureAudio() {
+        try {
+          audioStream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          });
+          const mimeType = getSupportedMimeType();
+          recorder = new MediaRecorder(audioStream, { mimeType });
+
+          recorder.ondataavailable = async (event) => {
+            if (event.data.size > 0) {
+              const reader = new FileReader();
+              reader.readAsDataURL(event.data);
+              reader.onloadend = () => {
+                const base64data = reader.result.split(",")[1]; // Remove data MIME prefix
+                const message = JSON.stringify({
+                  type: "audio_input",
+                  data: base64data,
+                });
+                socket.send(message);
+              };
+            }
+          };
+
+          const timeSlice = 100; // milliseconds
+          recorder.start(timeSlice);
+        } catch (error) {
+          console.error("Error capturing audio:", error);
+          document.getElementById("status").textContent =
+            "Error accessing microphone.";
+        }
+      }
+
+      function handleWebSocketMessage(event) {
+        const data = JSON.parse(event.data);
+
+        switch (data.type) {
+          case "audio_output":
+            const byteCharacters = atob(data.data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const mimeType = getSupportedMimeType();
+            const audioBlob = new Blob([byteArray], { type: mimeType });
+
+            audioQueue.push(audioBlob);
+            if (!isPlaying) {
+              playAudio();
+            }
+            break;
+
+          case "user_interruption":
+            stopAudio();
+            break;
+
+          case "assistant_end":
+            console.log("Assistant has finished speaking.");
+            break;
+
+          default:
+            console.log("Received message:", data);
+        }
+      }
+
+      function playAudio() {
+        if (isPlaying || audioQueue.length === 0) return;
+
+        isPlaying = true;
+        const audioBlob = audioQueue.shift();
+
+        const audioUrl = URL.createObjectURL(audioBlob);
+        currentAudio = new Audio(audioUrl);
+        currentAudio.play();
+
+        currentAudio.onended = () => {
+          isPlaying = false;
+          if (audioQueue.length > 0) {
+            playAudio();
+          } else {
+            document.getElementById("status").textContent =
+              "Assistant finished speaking.";
+          }
+        };
+      }
+
+      function stopAudio() {
+        if (currentAudio) {
+          currentAudio.pause();
+          currentAudio = null;
+        }
+        isPlaying = false;
+        audioQueue = [];
+      }
+
+      function stopRecording() {
+        if (recorder && recorder.state !== "inactive") {
+          recorder.stop();
+        }
+        if (audioStream) {
+          audioStream.getTracks().forEach((track) => track.stop());
+        }
+        if (socket) {
+          socket.close();
+        }
+        document.getElementById("status").textContent = "Recording stopped.";
+      }
+
+      // Event listeners for the buttons
+      document.getElementById("startButton").addEventListener("click", () => {
+        startRecording();
+        document.getElementById("startButton").disabled = true;
+        document.getElementById("stopButton").disabled = false;
+      });
+
+      document.getElementById("stopButton").addEventListener("click", () => {
+        stopRecording();
+        document.getElementById("startButton").disabled = false;
+        document.getElementById("stopButton").disabled = true;
+      });
+    </script>
+  </body>
+</html>

@@ -33,7 +33,7 @@
 
       .chat-container {
         width: 70%;
-        margin: 50px auto;
+        margin: 30px auto;
         background-color: #fff;
         border-radius: 5px;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -167,8 +167,9 @@
             />
             <h2>Chat with Mom</h2>
           </div>
+
           <div class="chat-input" style="margin-bottom: 20px">
-            <button id="getMemoryButton">✨ Tell me when...</button>
+            <button id="getMemoryButton">✨ Tell Me About...</button>
           </div>
 
           <div class="chat-input">
@@ -180,7 +181,7 @@
               🎤 Start Recording
             </button>
             <div id="loader"></div>
-            <span id="status" style="color: #888888">Not recording...</span>
+            <span id="status" style="color: #888888"></span>
           </div>
 
           <audio id="audio-player" controls></audio>
@@ -317,7 +318,7 @@
             <h2>Chat with Adel</h2>
           </div>
           <div class="chat-input" style="margin-bottom: 20px">
-            <button id="getMemoryButton2">✨ Tell me when...</button>
+            <button id="getMemoryButton2">✨ Tell Me About...</button>
           </div>
 
           <div class="chat-input">
@@ -329,7 +330,7 @@
               🎤 Start Recording
             </button>
             <div id="loader2"></div>
-            <span id="status2" style="color: #888888">Not recording...</span>
+            <span id="status2" style="color: #888888"></span>
           </div>
 
           <audio id="audio-player2" controls></audio>
@@ -479,17 +480,24 @@
               });
           </script>
         </div>
+        <button
+          style="
+            padding: 10px;
+            background-color: #9fc8b8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 200px;
+            margin: auto;
+          "
+          onclick="window.location.href='{{ url_for('excercise') }}'"
+        >
+          💪 Daily Challenge
+        </button>
       </div>
       <div class="video-emotions">
-        <div class="video-pane" style="">
-          <video
-            id="video-element"
-            autoplay
-            muted
-            width="320"
-            height="240"
-          ></video>
-        </div>
         <p
           style="
             padding: 10px;
@@ -503,6 +511,16 @@
         >
           Currently Experiencing
         </p>
+        <div class="video-pane" style="">
+          <video
+            id="video-element"
+            autoplay
+            muted
+            width="320"
+            height="240"
+          ></video>
+        </div>
+
         <div
           id="emotions-box"
           style="margin-top: 10px; text-align: center"

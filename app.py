@@ -146,11 +146,11 @@ def generate_frames():
                 # Visualize the angles on the screen for both arms
                 cv2.putText(image, f'Right Elbow Angle: {int(angle_right)}',
                             tuple(np.multiply(right_elbow, [640, 480]).astype(int)),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+                            cv2.FONT_HERSHEY_DUPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
  
                 cv2.putText(image, f'Left Elbow Angle: {int(angle_left)}',
                             tuple(np.multiply(left_elbow, [640, 480]).astype(int)),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+                            cv2.FONT_HERSHEY_DUPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
  
                 # Curl counter logic for the right arm
                 if angle_right > 160:
@@ -185,20 +185,20 @@ def generate_frames():
                 # Show feedback on the frame for both arms
                 cv2.putText(image, feedback_right,
                             (50, 50),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                            cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 240), 2, cv2.LINE_AA)
  
                 cv2.putText(image, feedback_left,
                             (50, 150),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                            cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 240), 2, cv2.LINE_AA)
  
                 # Display the rep count on the frame for both arms
                 cv2.putText(image, f'Right Reps: {counter_right}',
                             (50, 100),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
+                            cv2.FONT_HERSHEY_DUPLEX, 1, (153, 0, 76), 2, cv2.LINE_AA)
  
                 cv2.putText(image, f'Left Reps: {counter_left}',
                             (50, 200),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
+                            cv2.FONT_HERSHEY_DUPLEX, 1, (153, 0, 76), 2, cv2.LINE_AA)
  
             except:
                 pass
@@ -351,6 +351,10 @@ def leaderboard():
 def excercise():
     return render_template('excercise.html')
 
+@app.route('/hume_evi')
+def hume_evi():
+    return render_template('hume_evi.html')
+
 @app.route('/video_feed')
 def video_feed():
     return Response(generate_frames(),
@@ -413,7 +417,7 @@ ASSISTANT_ID = "asst_4atbjWem0a1P5EUSEVeUBWam"
 FIXED_THREAD_ID2 = "thread_s77TwY60UVroCUpKdXkKWazQ"
 ASSISTANT_ID2= "asst_o6T1dAedek46toiAMEODve6Q"
 
-ALIS_VOICE_ID="29b344f6-1387-4056-a46d-0ec33d53cb81"  
+ALIS_VOICE_ID="575a5d29-1fdc-4d4e-9afa-5a9a71759864"  
 ADEL_VOICE_ID="81a47897-6b62-42f8-85b4-0689d37e6511"
 
 @app.route('/new_chat', methods=['GET', 'POST'])
@@ -478,7 +482,7 @@ def new_chat():
 
         # **Use the separate function to generate audio**
         experimental_controls = {
-            "speed": "normal",
+            "speed": "slow",
             "emotion": [
             "positivity:high",
             "curiosity"
@@ -514,6 +518,12 @@ def new_chat2():
         user_message = request.form.get('message')
         thread_id = FIXED_THREAD_ID2  # Use the fixed thread_id directly
 
+        openai.beta.threads.messages.create(
+            thread_id=FIXED_THREAD_ID2,
+            role="user",
+            content="Use maximum 3 sentences to tell me a new concise story about a shared memory."
+        )
+
 
         # Create a run with the Assistant
         run = openai.beta.threads.runs.create_and_poll(
@@ -547,7 +557,7 @@ def new_chat2():
             "curiosity"
             ]
         }
-        audio_data = generate_audio_with_cartesia(assistant_reply, ALIS_VOICE_ID, experimental_controls)
+        audio_data = generate_audio_with_cartesia(assistant_reply, ADEL_VOICE_ID, experimental_controls)
 
         if audio_data is None:
             return jsonify({'error': 'Failed to generate audio'}), 500
@@ -663,14 +673,11 @@ def audio_to_text():
 
     # **Use the separate function to generate audio**
     experimental_controls = {
-            "speed": "fast",
+            "speed": "slowest",
             "emotion": [
-            "positivity:highest",
-            "curiosity:high",
-            "surprise:high"
             ]
         }
-    audio_data = generate_audio_with_cartesia(assistant_reply, ADEL_VOICE_ID, experimental_controls)
+    audio_data = generate_audio_with_cartesia(assistant_reply, ALIS_VOICE_ID, experimental_controls)
 
     if audio_data is None:
         return jsonify({'error': 'Failed to generate audio'}), 500
