@@ -1,68 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Futuristic Landing Page</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reviva</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
     <style>
-        body {
-            color: #fff;
-            font-family: 'Arial', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
+      body {
+        color: #fff;
+        font-family: "Arial", sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+      .container {
+        text-align: center;
+      }
+      .logo {
+        margin-bottom: 2rem;
+        animation: pulse 1.5s infinite alternate;
+      }
+      .logo img {
+        width: 200px;
+        border-radius: 50%;
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+      }
+      .buttons {
+        margin-top: 2rem;
+      }
+      .btn {
+        background-color: #9fc8b8;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        border-radius: 5px;
+      }
+      .btn:hover {
+        background-color: #79a393;
+      }
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
         }
-        .container {
-            text-align: center;
+        100% {
+          transform: scale(1.1);
         }
-        .logo {
-            margin-bottom: 2rem;
-            animation: pulse 1.5s infinite alternate;
-        }
-        .logo img {
-            width: 200px;
-            border-radius: 50%;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
-        }
-        .buttons {
-            margin-top: 2rem;
-        }
-        .btn {
-            background-color: #ff6600;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            border-radius: 5px;
-        }
-        .btn:hover {
-            background-color: #ff8533;
-        }
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-            }
-            100% {
-                transform: scale(1.1);
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div class="logo">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
-        </div>
-        <div class="buttons">
-            <a href="{{ url_for('signin') }}"><button class="btn">Sign In</button></a>
-            <a href="{{ url_for('signup') }}"><button class="btn">Sign Up</button></a>
-        </div>
+      <div class="logo">
+        <img
+          src="{{ url_for('static', filename='images/logo.png') }}"
+          alt="Logo"
+        />
+      </div>
+      <div class="buttons">
+        <a href="{{ url_for('signin') }}"
+          ><button class="btn">Sign In</button></a
+        >
+        <a href="{{ url_for('signup') }}"
+          ><button class="btn">Sign Up</button></a
+        >
+      </div>
     </div>
-</body>
+  </body>
 </html>
-

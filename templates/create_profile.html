@@ -1,84 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Create Profile</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    />
     <style>
-        body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: #f0f0f0;
-            font-family: Arial, sans-serif;
-        }
-        .create-profile-container {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
-            width: 100%;
-        }
-        h2 {
-            text-align: center;
-            font-size: 1.8rem;
-            margin-bottom: 20px;
-            color: #333;
-        }
-        form {
-            display: flex;
-            flex-direction: column;
-        }
-        label {
-            font-size: 1rem;
-            margin-bottom: 5px;
-            color: #333;
-        }
-        input, select {
-            margin-bottom: 15px;
-            padding: 12px;
-            width: 100%;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-        button {
-            padding: 12px 30px;
-            border: none;
-            background-color: #007BFF;
-            color: white;
-            border-radius: 5px;
-            font-size: 1rem;
-            cursor: pointer;
-            margin-top: 20px;
-            width: 100%;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background-color: #f0f0f0;
+        font-family: Arial, sans-serif;
+      }
+      .create-profile-container {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+        max-width: 500px;
+        width: 100%;
+      }
+      h2 {
+        text-align: center;
+        font-size: 1.8rem;
+        margin-bottom: 20px;
+        color: #333;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+      }
+      label {
+        font-size: 1rem;
+        margin-bottom: 5px;
+        color: #333;
+      }
+      input,
+      select {
+        margin-bottom: 15px;
+        padding: 12px;
+        width: 100%;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 1rem;
+      }
+      button {
+        padding: 12px 30px;
+        border: none;
+        background-color: #007bff;
+        color: white;
+        border-radius: 5px;
+        font-size: 1rem;
+        cursor: pointer;
+        margin-top: 20px;
+        width: 100%;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="create-profile-container">
-        <h2>Create Profile</h2>
-        <form action="/create_profile" method="POST">
-            <label for="name">Name:</label>
-            <input type="text" id="name" name="name" required>
+      <h2>Join Reviva</h2>
+      <form action="/create_profile" method="POST">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required />
 
-            <label for="age">Age:</label>
-            <input type="number" id="age" name="age" required>
+        <label for="age">Age:</label>
+        <input type="number" id="age" name="age" required />
 
-            <label for="gender">Gender:</label>
-            <select id="gender" name="gender" required>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-            </select>
+        <label for="gender">Gender:</label>
+        <select id="gender" name="gender" required>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="other">Other</option>
+        </select>
 
-            <!-- <label for="surgery_type">Type of Surgery:</label>
+        <!-- <label for="surgery_type">Type of Surgery:</label>
             <select id="surgery_type" name="surgery_type" required>
                 <option value="cardiac">Cardiac</option>
                 <option value="ortho">Ortho</option>
@@ -87,8 +91,8 @@
                 <option value="other">Other</option>
             </select> -->
 
-            <button type="submit">Create</button>
-        </form>
+        <button type="submit">Join</button>
+      </form>
     </div>
-</body>
+  </body>
 </html>

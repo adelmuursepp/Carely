@@ -1,85 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Split Button Layout</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-        body, html {
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #f0f0f0;
-        }
+      body,
+      html {
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #f0f0f0;
+      }
 
-        .container {
-            display: flex;
-            width: 100vw;
-            height: 100vh;
-            position: relative;
-        }
+      .container {
+        display: flex;
+        width: 100vw;
+        height: 100vh;
+        position: relative;
+      }
 
-        .half {
-            flex: 1;
-            border: none;
-            cursor: pointer;
-            font-size: 2rem;
-            color: black;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+      .half {
+        flex: 1;
+        border: none;
+        cursor: pointer;
+        font-size: 2rem;
+        color: black;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
 
-        .red {
-          background: linear-gradient(to left, #ffcccc, #f7f7f7);
-        }
+      .red {
+        background: linear-gradient(to left, #ffcccc, #f7f7f7);
+      }
 
-        .blue {
-    background: linear-gradient(to left, #ffffff, #cceeff); /* Same background */
-        }
+      .blue {
+        background: linear-gradient(
+          to left,
+          #ffffff,
+          #cceeff
+        ); /* Same background */
+      }
 
-        .logo {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10;
-        }
+      .logo {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10;
+      }
 
-        .logo img {
-            height: 250px; /* Adjust this as needed */
-            width: auto;
-            border-radius: 125px;
-            animation: pulse 1.5s infinite alternate;
+      .logo img {
+        height: 250px; /* Adjust this as needed */
+        width: auto;
+        border-radius: 125px;
+        animation: pulse 1.5s infinite alternate;
+      }
+      .homeIcon {
+        height: 5000px;
+        width: auto;
+      }
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
         }
-        .homeIcon {
-            height: 5000px;
-            width: auto;
+        100% {
+          transform: scale(1.1);
         }
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-            }
-            100% {
-                transform: scale(1.1);
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-     <button class="half red" onclick="window.location.href='{{ url_for('excercise') }}'">Physical Ailment</button>
-        <div class="logo">
-            <img src="static/images/logo.png" className="homeIcon" alt="Logo">
-        </div>
-        <button class="half blue" onclick="window.location.href='{{ url_for('new_chat') }}'">Mental Ailment</button>
+      <button
+        class="half"
+        onclick="window.location.href='{{ url_for('excercise') }}'"
+      ></button>
+      <div class="logo">
+        <img src="static/images/logo.png" className="homeIcon" alt="Logo" />
+      </div>
+      <button
+        class="half"
+        onclick="window.location.href='{{ url_for('new_chat') }}'"
+      ></button>
     </div>
-</body>
+  </body>
 </html>

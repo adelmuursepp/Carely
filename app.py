@@ -25,8 +25,13 @@ import soundfile as sf  # To process audio formats like WAV
 import tempfile
 from resemble import Resemble
 import websockets
-import asyncio
-import base64
+from twilio.rest import Client
+from cartesia import Cartesia
+import json
+
+   
+
+
 from groq import Groq
 
 
@@ -39,7 +44,14 @@ load_dotenv()
 groq_client = Groq()
 
 
-model = whisper.load_model("base")
+twilio_account_sid = os.environ["TWILIO_ACCOUNT_SID"]
+twilio_auth_token = os.environ["TWILIO_AUTH_TOKEN"]
+twilio_client = Client(twilio_account_sid, twilio_auth_token)
+
+cartesia_client = Cartesia(api_key=os.environ.get("CARTESIA_API_KEY"))
+
+
+# model = whisper.load_model("base")
 
 
 HUME_API_KEY = os.getenv("HUME_API_KEY")
@@ -50,16 +62,9 @@ app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Change this to a random secret key
 
 # Initialize OpenAI Client
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+client = OpenAI()
 
 socketio = SocketIO(app, engineio_logger=True, logger=True, cors_allowed_origins="*")
-
-HEYGEN_API_KEY = os.getenv('HEYGEN_API_KEY')
-
-# Endpoint for generating videos
-HEYGEN_VIDEO_GENERATE_URL = 'https://api.heygen.com/v2/video/generate'
-HEYGEN_VIDEO_STATUS_URL = 'https://api.heygen.com/v1/video_status.get'
-
 
 # Initialize MediaPipe Pose
 mp_pose = mp.solutions.pose
@@ -313,6 +318,31 @@ def create_profile():
 
     return render_template('create_profile.html')
 
+@app.route('/send-whatsapp', methods=['POST'])
+def send_whatsapp():
+    try:
+        data = request.json
+        message_body = data.get('message', "Signs of sadness. It would be a good idea to check on her.")  
+
+
+
+        # Send WhatsApp message
+        message = twilio_client.messages.create(
+            body=message_body,
+            from_="whatsapp:+14155238886",
+            to="whatsapp:+14377883703"
+        )
+
+        return jsonify({
+            "message_sid": message.sid,
+            "status": message.status,
+            "body": message.body
+        }), 200
+
+    except Exception as e:
+        print("Error sending whatsapp", e)
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/leaderboard')
 def leaderboard():
     return render_template('leaderboard.html')
@@ -326,43 +356,102 @@ def video_feed():
     return Response(generate_frames(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
+def generate_audio_with_cartesia(transcript, voice_id, experimental_controls):
+    """
+    Generates audio from text using the Cartesia API.
+
+    Parameters:
+        transcript (str): The text to convert to speech.
+
+    Returns:
+        bytes: The audio data in bytes if successful.
+        None: If there was an error during the API call.
+    """
+    try:
+        url = "https://api.cartesia.ai/tts/bytes"
+        payload = {
+            "model_id": "sonic-english",
+            "transcript": transcript,
+            "voice": {
+                "mode": "id",
+                "id": voice_id
+            },
+            "__experimental_controls": experimental_controls,
+            "output_format": {
+                "container": "wav",
+                "encoding": "pcm_s16le",
+                "sample_rate": 44100
+            }
+        }
+        headers = {
+            "Cartesia-Version": "2024-06-10",
+            "X-API-Key": os.environ.get("CARTESIA_API_KEY"),
+            "Content-Type": "application/json"
+        }
+
+        response = requests.post(url, json=payload, headers=headers)
+        print("Sent request to Cartesia, response status:", response.status_code)
+
+        if response.status_code != 200:
+            print(f"Cartesia API Error: {response.status_code} {response.text}")
+            return None
+
+        # The response.content contains the audio data
+        audio_data = response.content
+        return audio_data
+
+    except Exception as e:
+        print("Error generating audio with Cartesia:", e)
+        return None
 
 
 
 # Fixed thread ID and Assistant ID
-FIXED_THREAD_ID = "thread_LRBdUm1StIQS7nvb4Osww3R9"
-ASSISTANT_ID = "asst_T7NJHUhQr1AY4X7d4MwPF1X1"
+FIXED_THREAD_ID = "thread_UCyjG6b6PvuvMnB9IVXMAJnr"
+ASSISTANT_ID = "asst_4atbjWem0a1P5EUSEVeUBWam"
 
-FIXED_THREAD_ID2 = "thread_OfSnG91bve6g8tTLrYndlJ88"
-ASSISTANT_ID2= "asst_4atbjWem0a1P5EUSEVeUBWam"
+FIXED_THREAD_ID2 = "thread_s77TwY60UVroCUpKdXkKWazQ"
+ASSISTANT_ID2= "asst_o6T1dAedek46toiAMEODve6Q"
+
+ALIS_VOICE_ID="29b344f6-1387-4056-a46d-0ec33d53cb81"  
+ADEL_VOICE_ID="81a47897-6b62-42f8-85b4-0689d37e6511"
 
 @app.route('/new_chat', methods=['GET', 'POST'])
 def new_chat():
+    print("Request received in new_chat")
     if request.method == 'GET':
         # Render the chat interface with the fixed thread_id
         return render_template('new_chat.html', thread_id=FIXED_THREAD_ID)
 
     elif request.method == 'POST':
+        print("Request received in new_chat POST")
         user_message = request.form.get('message')
+        print("user message in new chat is ", user_message)
         thread_id = FIXED_THREAD_ID  # Use the fixed thread_id directly
 
         if not user_message:
             return jsonify({'error': 'Missing message.'}), 400
+        
+        try:
+            thread = client.beta.threads.retrieve(FIXED_THREAD_ID)
+            print("Thread exists:", thread)
+        except Exception as e:
+            print("Error accessing thread:", e)
 
 
         # Step 3: Add user message to the thread
-        openai.beta.threads.messages.create(
-            thread_id=thread_id,
-            role="user",
-            content=user_message
-        )
+        # openai.beta.threads.messages.create(
+        #     thread_id=thread_id,
+        #     role="user",
+        #     content=user_message
+        # )
 
 
         # Step 4: Create a run with the Assistant
         run = openai.beta.threads.runs.create_and_poll(
             thread_id=thread_id,
             assistant_id=ASSISTANT_ID,
-            instructions="Answer as Ishika."
+            instructions="Use maximum 3 sentences to tell a new concise story about a shared memory."
         )
 
 # print(thread_messages.÷data)
@@ -382,47 +471,37 @@ def new_chat():
                 if last_message.role == 'assistant':
                     print("Last message\n\n")
                     assistant_reply = last_message.content[0].text.value
+                    print(assistant_reply)
 
         else:
             print(run.status)
 
+        # **Use the separate function to generate audio**
+        experimental_controls = {
+            "speed": "normal",
+            "emotion": [
+            "positivity:high",
+            "curiosity"
+            ]
+        }
+        audio_data = generate_audio_with_cartesia(assistant_reply, ALIS_VOICE_ID, experimental_controls)
+
+        if audio_data is None:
+            return jsonify({'error': 'Failed to generate audio'}), 500
+
+        # Use BytesIO to handle the file in memory
+        audio_io = BytesIO(audio_data)
+        audio_io.seek(0)
+
+        # Send the audio file as a response
+        return send_file(
+            audio_io,
+            mimetype='audio/wav',
+            as_attachment=False,
+            download_name='response_audio.wav'
+        )
 
 
-    # Get your default Resemble project.
-    project_uuid = Resemble.v2.projects.all(1, 10)['items'][0]['uuid']
-
-    # Get your Voice uuid. In this example, we'll obtain the first.
-    voice_uuid = Resemble.v2.voices.all(1, 10)['items'][0]['uuid']
-
-    # Let's create a clip!
-    response = Resemble.v2.clips.create_sync(project_uuid,
-                                            voice_uuid,
-                                            assistant_reply,
-                                            title=None,
-                                            sample_rate=None,
-                                            output_format=None,
-                                            precision=None,
-                                            include_timestamps=None,
-                                            is_archived=None,
-                                            raw=None)
-    if response['success']:
-        # # Get the audio URL from the response
-        # audio_url = response['item']['audio_src']
-        # print(f"Audio URL: {audio_url}")
-
-        # # Fetch the audio file from the URL
-        # audio_response = requests.get(audio_url)
-
-        # # Use a temporary file to store the audio and play it
-        # audio_file = BytesIO(audio_response.content)
-        # audio_file.seek(0)
-
-        # return send_file(audio_file, mimetype='audio/wav', download_name='audio.wav')
-
-    #     print("assistant reply", assistant_reply)
-        return jsonify({'reply': assistant_reply}), 200
-    else:
-        return jsonify({"error": "Failed to get audio"}), 400
 
 @app.route('/new_chat2', methods=['GET', 'POST'])
 def new_chat2():
@@ -435,26 +514,14 @@ def new_chat2():
         user_message = request.form.get('message')
         thread_id = FIXED_THREAD_ID2  # Use the fixed thread_id directly
 
-        if not user_message:
-            return jsonify({'error': 'Missing message.'}), 400
 
-
-        # Step 3: Add user message to the thread
-        openai.beta.threads.messages.create(
-            thread_id=thread_id,
-            role="user",
-            content=user_message
-        )
-
-
-        # Step 4: Create a run with the Assistant
+        # Create a run with the Assistant
         run = openai.beta.threads.runs.create_and_poll(
             thread_id=thread_id,
             assistant_id=ASSISTANT_ID2,
-            instructions="Answer as Mom."
+            instructions="Use maximum 3 sentences to tell me a new concise story about a shared memory."
         )
 
-# print(thread_messages.÷data)
 
         if run.status == 'completed': 
 
@@ -472,46 +539,31 @@ def new_chat2():
                     print("Last message\n\n")
                     assistant_reply = last_message.content[0].text.value
 
-        else:
-            print(run.status)
+        # **Use the separate function to generate audio**
+        experimental_controls = {
+            "speed": "normal",
+            "emotion": [
+            "positivity:high",
+            "curiosity"
+            ]
+        }
+        audio_data = generate_audio_with_cartesia(assistant_reply, ALIS_VOICE_ID, experimental_controls)
 
+        if audio_data is None:
+            return jsonify({'error': 'Failed to generate audio'}), 500
 
+        # Use BytesIO to handle the file in memory
+        audio_io = BytesIO(audio_data)
+        audio_io.seek(0)
 
-    # Get your default Resemble project.
-    project_uuid = Resemble.v2.projects.all(1, 10)['items'][0]['uuid']
+        # Send the audio file as a response
+        return send_file(
+            audio_io,
+            mimetype='audio/wav',
+            as_attachment=False,
+            download_name='response_audio.wav'
+        )
 
-    # Get your Voice uuid. In this example, we'll obtain the first.
-    voice_uuid = Resemble.v2.voices.all(1, 10)['items'][0]['uuid']
-
-    # Let's create a clip!
-    response = Resemble.v2.clips.create_sync(project_uuid,
-                                            voice_uuid,
-                                            assistant_reply,
-                                            title=None,
-                                            sample_rate=None,
-                                            output_format=None,
-                                            precision=None,
-                                            include_timestamps=None,
-                                            is_archived=None,
-                                            raw=None)
-    if response['success']:
-        # # Get the audio URL from the response
-        # audio_url = response['item']['audio_src']
-        # print(f"Audio URL: {audio_url}")
-
-        # # Fetch the audio file from the URL
-        # audio_response = requests.get(audio_url)
-
-        # # Use a temporary file to store the audio and play it
-        # audio_file = BytesIO(audio_response.content)
-        # audio_file.seek(0)
-
-        # return send_file(audio_file, mimetype='audio/wav', download_name='audio.wav')
-
-    #     print("assistant reply", assistant_reply)
-        return jsonify({'reply': assistant_reply}), 200
-    else:
-        return jsonify({"error": "Failed to get audio"}), 400
 
 
 # Handle WebSocket messages from frontend
@@ -541,47 +593,6 @@ async def send_to_hume(base64_image):
         return json.loads(response)
 
 
-# @app.route('/audio_to_text', methods=['POST'])
-# def audio_to_text():
-#     audio_file = request.files['audio']
-#     if not audio_file:
-#         return jsonify({'error': 'No audio file found'}), 400
-
-#     # Process the audio file here
-#     result = model.transcribe(audio_file)
-#     new_chat(result)
-#     return jsonify({'message': 'Audio file received'}), 200
-
- # To make a POST request to the /new_chat route
-
-# @app.route('/audio_to_text', methods=['POST'])
-# def audio_to_text():
-#     audio_file = request.files['audio']
-#     if not audio_file:
-#         return jsonify({'error': 'No audio file found'}), 400
-
-#     # Process the audio file here (assuming you have a model object to transcribe)
-    
-#     audio_bytes = BytesIO(audio_file.read())
-#     audio, sample_rate = sf.read(audio_bytes)
-
-    # Check if sample rate needs to be adjusted for the model
-    # If using Whisper, it resamples automatically
-    # But if you're using another model, you may need to resample
-
-    # Assuming model accepts raw audio data for transcription
-    # result = model.transcribe(audio)
-    # transcribed_text = result['text']  
-    # # Make a POST request to /new_chat with the transcribed text
-    # response = requests.post('http://localhost:5000/new_chat', data={'msg': transcribed_text})
-
-    # # Check if the /new_chat route responded successfully
-    # if response.status_code == 200:
-    #     return jsonify({'message': 'Audio file transcribed and processed successfully'}), 200
-    # else:
-    #     return jsonify({'error': 'Failed to process the transcribed text'}), 500
-
-
 
 @app.route('/audio_to_text', methods=['POST'])
 def audio_to_text():
@@ -589,72 +600,95 @@ def audio_to_text():
         return jsonify({'error': 'No audio file found'}), 400
 
     audio_file = request.files['audio']
+    
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".m4a", delete=False) as temp_audio_file:
+            print("Writing to temp file")  # Debug log
+            temp_audio_file.write(audio_file.read())
+            temp_audio_path = temp_audio_file.name
+            print(f"Temp file path: {temp_audio_path}")  # Debug log
 
-    # Save the audio to a temporary file
-    with tempfile.NamedTemporaryFile(suffix=".m4a", delete=False) as temp_audio_file:
-        temp_audio_file.write(audio_file.read())
-        temp_audio_path = temp_audio_file.name
-        temp_audio_file.close()
-
-    # Open the audio file
-    with open(temp_audio_path, "rb") as file:
-        # Initialize the Groq client
-        client = Groq()
-
-        # Create a translation of the audio file
-        translation = client.audio.transcriptions.create(
-            file=(temp_audio_path, file.read()), 
-            model="whisper-large-v3", 
-            language="en",
-            response_format="verbose_json",
-        )
-        # print("translation is", translation)
-
-        transcription = translation.text
-        print("transcription is", transcription)
-
+        with open(temp_audio_path, "rb") as file:
+            print("Starting transcription")  # Debug log
+            transcription = groq_client.audio.transcriptions.create(
+                file=(temp_audio_path, file.read()),
+                model="whisper-large-v3",
+                language="en",
+                response_format="verbose_json",
+            )
+            print("Transcription completed")  
+    except:
+        print("Error completing transcription")
     # Clean up the temporary audio file
     os.remove(temp_audio_path)
 
+    try:
+        thread = client.beta.threads.retrieve(FIXED_THREAD_ID)
+        print("Thread exists")
+    except Exception as e:
+        print("Error accessing thread:", e)
 
-    # Make the POST request to another endpoint
-    response = requests.post('http://localhost:5000/new_chat', data={'message': transcription})
-
-    if response.status_code != 200:
-        return jsonify({'error': 'Failed to process chat.'}), response.status_code
-
-    # Assuming the assistant's reply is received in the response
-    assistant_reply = response.json().get('reply')
-
-    # Use Resemble to generate the audio response from the assistant's reply
-    Resemble.api_key('JtsTeaqzfiBJuvxFYh9uIgtt')
-    project_uuid = Resemble.v2.projects.all(1, 10)['items'][0]['uuid']
-    voice_uuid = Resemble.v2.voices.all(1, 10)['items'][0]['uuid']
-
-    # Create the voice clip using Resemble
-    resemble_response = Resemble.v2.clips.create_sync(
-        project_uuid, voice_uuid, assistant_reply
+    openai.beta.threads.messages.create(
+        thread_id=FIXED_THREAD_ID ,
+        role="user",
+        content=str(transcription.text)
     )
 
-    if resemble_response['success']:
-        # Fetch the audio file from the generated URL
-        audio_url = resemble_response['item']['audio_src']
-        audio_response = requests.get(audio_url)
+    run = openai.beta.threads.runs.create_and_poll(
+        thread_id=FIXED_THREAD_ID ,
+        assistant_id=ASSISTANT_ID,
+        instructions="Answer as Mom."
+    )
 
-        # Use BytesIO to handle the file in memory
-        audio_file = BytesIO(audio_response.content)
-        audio_file.seek(0)
 
-        # Send the audio file as a response
-        return send_file(
-            audio_file,
-            mimetype='audio/wav',
-            as_attachment=True,
-            download_name='response_audio.wav'
+    if run.status == 'completed': 
+
+
+        messages_cursor = openai.beta.threads.messages.list(
+            thread_id=FIXED_THREAD_ID ,
+            order='desc',
+            limit=1
         )
-    else:
-        return jsonify({'error': 'Failed to generate audio'}), 400
+        # print("=======message cursor", messages_cursor)
+        messages = list(messages_cursor)
+        if messages:
+            last_message = messages[0]
+            if last_message.role == 'assistant':
+                print("Last message\n\n")
+                assistant_reply = last_message.content[0].text.value
+                print(assistant_reply)
 
+    else:
+        print(run.status)
+
+    # **Use the separate function to generate audio**
+    experimental_controls = {
+            "speed": "fast",
+            "emotion": [
+            "positivity:highest",
+            "curiosity:high",
+            "surprise:high"
+            ]
+        }
+    audio_data = generate_audio_with_cartesia(assistant_reply, ADEL_VOICE_ID, experimental_controls)
+
+    if audio_data is None:
+        return jsonify({'error': 'Failed to generate audio'}), 500
+
+    # Use BytesIO to handle the file in memory
+    audio_io = BytesIO(audio_data)
+    audio_io.seek(0)
+
+    # Send the audio file as a response
+    return send_file(
+        audio_io,
+        mimetype='audio/wav',
+        as_attachment=False,
+        download_name='response_audio.wav'
+    )
+
+
+    
 
 @app.route('/audio_to_text2', methods=['POST'])
 def audio_to_text2():
@@ -662,71 +696,91 @@ def audio_to_text2():
         return jsonify({'error': 'No audio file found'}), 400
 
     audio_file = request.files['audio']
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".m4a", delete=False) as temp_audio_file:
+            print("Writing to temp file")  # Debug log
+            temp_audio_file.write(audio_file.read())
+            temp_audio_path = temp_audio_file.name
+            print(f"Temp file path: {temp_audio_path}")  # Debug log
 
-    # Save the audio to a temporary file
-    with tempfile.NamedTemporaryFile(suffix=".m4a", delete=False) as temp_audio_file:
-        temp_audio_file.write(audio_file.read())
-        temp_audio_path = temp_audio_file.name
-        temp_audio_file.close()
-
-    # Open the audio file
-    with open(temp_audio_path, "rb") as file:
-        # Initialize the Groq client
-        client = Groq()
-
-        # Create a translation of the audio file
-        translation = client.audio.transcriptions.create(
-            file=(temp_audio_path, file.read()), 
-            model="whisper-large-v3", 
-            language="en",
-            response_format="verbose_json",
-        )
-        # print("translation is", translation)
-
-        transcription = translation.text
-        print("transcription is", transcription)
-
+        with open(temp_audio_path, "rb") as file:
+            print("Starting transcription in audio to text 2")  # Debug log
+            transcription = groq_client.audio.transcriptions.create(
+                file=(temp_audio_path, file.read()),
+                model="whisper-large-v3",
+                language="en",
+                response_format="verbose_json",
+            )
+            print("Transcription completed")  
+    except:
+        print("Error completing transcription")
     # Clean up the temporary audio file
     os.remove(temp_audio_path)
 
+    try:
+        thread = client.beta.threads.retrieve(FIXED_THREAD_ID2)
+        print("Thread exists")
+    except Exception as e:
+        print("Error accessing thread:", e)
 
-    # Make the POST request to another endpoint
-    response = requests.post('http://localhost:5000/new_chat2', data={'message': transcription})
-
-    if response.status_code != 200:
-        return jsonify({'error': 'Failed to process chat.'}), response.status_code
-
-    # Assuming the assistant's reply is received in the response
-    assistant_reply = response.json().get('reply')
-
-    # Use Resemble to generate the audio response from the assistant's reply
-    Resemble.api_key('JtsTeaqzfiBJuvxFYh9uIgtt')
-    project_uuid = Resemble.v2.projects.all(1, 10)['items'][0]['uuid']
-    voice_uuid = Resemble.v2.voices.all(1, 10)['items'][0]['uuid']
-
-    # Create the voice clip using Resemble
-    resemble_response = Resemble.v2.clips.create_sync(
-        project_uuid, voice_uuid, assistant_reply
+    openai.beta.threads.messages.create(
+        thread_id=FIXED_THREAD_ID2,
+        role="user",
+        content=str(transcription.text)
     )
 
-    if resemble_response['success']:
-        # Fetch the audio file from the generated URL
-        audio_url = resemble_response['item']['audio_src']
-        audio_response = requests.get(audio_url)
+    run = openai.beta.threads.runs.create_and_poll(
+        thread_id=FIXED_THREAD_ID2,
+        assistant_id=ASSISTANT_ID2,
+        instructions="Answer as Adel."
+    )
 
-        # Use BytesIO to handle the file in memory
-        audio_file = BytesIO(audio_response.content)
-        audio_file.seek(0)
 
-        # Send the audio file as a response
-        return send_file(
-            audio_file,
-            mimetype='audio/wav',
-            as_attachment=True,
-            download_name='response_audio.wav'
+    if run.status == 'completed': 
+
+
+        messages_cursor = openai.beta.threads.messages.list(
+            thread_id=FIXED_THREAD_ID2,
+            order='desc',
+            limit=1
         )
+        # print("=======message cursor", messages_cursor)
+        messages = list(messages_cursor)
+        if messages:
+            last_message = messages[0]
+            if last_message.role == 'assistant':
+                print("Last message\n\n")
+                assistant_reply = last_message.content[0].text.value
+                print(assistant_reply)
+
     else:
-        return jsonify({'error': 'Failed to generate audio'}), 400
+        print(run.status)
+
+    # **Use the separate function to generate audio**
+    experimental_controls = {
+            "speed": "fast",
+            "emotion": [
+            "positivity:highest",
+            "curiosity:high",
+            "surprise:high"
+            ]
+        }
+    audio_data = generate_audio_with_cartesia(assistant_reply, ADEL_VOICE_ID, experimental_controls)
+
+    if audio_data is None:
+        return jsonify({'error': 'Failed to generate audio'}), 500
+
+    # Use BytesIO to handle the file in memory
+    audio_io = BytesIO(audio_data)
+    audio_io.seek(0)
+
+    # Send the audio file as a response
+    return send_file(
+        audio_io,
+        mimetype='audio/wav',
+        as_attachment=False,
+        download_name='response_audio.wav'
+    )
 
 
 

@@ -32,7 +32,7 @@
       }
 
       .chat-container {
-        width: 500px;
+        width: 70%;
         margin: 50px auto;
         background-color: #fff;
         border-radius: 5px;
@@ -65,7 +65,7 @@
 
       .chat-input button {
         padding: 10px;
-        background-color: #007bff;
+        background-color: #9fc8b8;
         color: white;
         border: none;
         border-radius: 5px;
@@ -74,7 +74,7 @@
       }
 
       .chat-input button:hover {
-        background-color: #0056b3;
+        background-color: #75a290;
       }
 
       .icon-btn {
@@ -95,7 +95,7 @@
         margin-left: 10px;
         border: 4px solid #f3f3f3;
         border-radius: 50%;
-        border-top: 4px solid #3498db;
+        border-top: 4px solid #9fc8b8;
         width: 20px;
         height: 20px;
         animation: spin 2s linear infinite;
@@ -161,11 +161,14 @@
         <div class="chat-container">
           <div class="chat-header">
             <img
-              src="../static/images/person-icon.jpeg"
+              src="../static/images/alis2.png"
               alt="Person"
               class="person-icon"
             />
-            <h2>Chat with Ishika</h2>
+            <h2>Chat with Mom</h2>
+          </div>
+          <div class="chat-input" style="margin-bottom: 20px">
+            <button id="getMemoryButton">✨ Tell me when...</button>
           </div>
 
           <div class="chat-input">
@@ -177,7 +180,7 @@
               🎤 Start Recording
             </button>
             <div id="loader"></div>
-            <span id="status">Not recording...</span>
+            <span id="status" style="color: #888888">Not recording...</span>
           </div>
 
           <audio id="audio-player" controls></audio>
@@ -216,6 +219,7 @@
               mediaRecorder.onstop = function () {
                 const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
                 audioChunks = [];
+                console.log("Stopped recording");
                 sendAudioToBackend(audioBlob);
               };
             }
@@ -236,6 +240,7 @@
                 body: formData,
               })
                 .then((response) => {
+                  console.log("Fetching from audio to text");
                   loader.style.display = "none";
                   if (!response.ok) {
                     throw new Error("Network response was not ok");
@@ -256,6 +261,222 @@
                   );
                 });
             }
+
+            document
+              .getElementById("getMemoryButton")
+              .addEventListener("click", function () {
+                // Update UI to indicate processing
+                loader.style.display = "inline-block";
+                statusText.textContent = "Remembering moments...";
+
+                fetch("/new_chat", {
+                  method: "POST",
+                  headers: {
+                    // No need to set Content-Type for a simple POST without body
+                  },
+                  // If your endpoint requires a message, include it in the body
+                  body: new URLSearchParams({
+                    message: "Tell me about a memory",
+                  }),
+                })
+                  .then((response) => {
+                    loader.style.display = "none";
+                    if (!response.ok) {
+                      throw new Error("Network response was not ok");
+                    }
+                    return response.blob(); // Get the audio blob from the response
+                  })
+                  .then((audioBlob) => {
+                    // Create a Blob with the correct MIME type
+                    const audioBlobWithType = new Blob([audioBlob], {
+                      type: "audio/wav",
+                    });
+                    const audioUrl = URL.createObjectURL(audioBlobWithType);
+                    const audioPlayer = document.getElementById("audio-player");
+                    audioPlayer.src = audioUrl; // Set the source to the blob URL
+                    audioPlayer.style.display = "block"; // Show the audio player
+                    audioPlayer.play(); // Play the audio
+
+                    // Optional: Update status text
+                    statusText.textContent = "Sharing memory.";
+                  })
+                  .catch((error) => {
+                    console.error("Error fetching memory:", error);
+                    statusText.textContent = "Error fetching memory.";
+                  });
+              });
+          </script>
+        </div>
+        <div class="chat-container">
+          <div class="chat-header">
+            <img
+              src="../static/images/adel2.png"
+              alt="Person"
+              class="person-icon"
+            />
+            <h2>Chat with Adel</h2>
+          </div>
+          <div class="chat-input" style="margin-bottom: 20px">
+            <button id="getMemoryButton2">✨ Tell me when...</button>
+          </div>
+
+          <div class="chat-input">
+            <button
+              id="recordButton2"
+              class="icon-btn"
+              onclick="toggleRecording2()"
+            >
+              🎤 Start Recording
+            </button>
+            <div id="loader2"></div>
+            <span id="status2" style="color: #888888">Not recording...</span>
+          </div>
+
+          <audio id="audio-player2" controls></audio>
+
+          <script>
+            let mediaRecorder2;
+            let audioChunks2 = [];
+            let isRecording2 = false;
+            const recordButton2 = document.getElementById("recordButton2");
+            const loader2 = document.getElementById("loader2");
+            const statusText2 = document.getElementById("status2");
+
+            function toggleRecording2() {
+              if (isRecording2) {
+                stopRecording2();
+              } else {
+                startRecording2();
+              }
+            }
+
+            async function startRecording2() {
+              const stream2 = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+              });
+              mediaRecorder2 = new MediaRecorder(stream2);
+              mediaRecorder2.start();
+              isRecording2 = true;
+              recordButton2.textContent = "🛑 Stop Recording";
+              loader2.style.display = "inline-block";
+              statusText2.textContent = "Recording...";
+
+              mediaRecorder2.ondataavailable = function (event) {
+                audioChunks2.push(event.data);
+              };
+
+              mediaRecorder2.onstop = function () {
+                const audioBlob2 = new Blob(audioChunks2, {
+                  type: "audio/wav",
+                });
+                audioChunks2 = [];
+                sendAudioToBackend2(audioBlob2);
+              };
+            }
+
+            function stopRecording2() {
+              mediaRecorder2.stop();
+              isRecording2 = false;
+              recordButton2.textContent = "🎤 Start Recording";
+              statusText2.textContent = "Stopped recording.";
+            }
+
+            function sendAudioToBackend2(audioBlob2) {
+              const formData2 = new FormData();
+              formData2.append("audio", audioBlob2, "audio.wav");
+
+              fetch("/audio_to_text2", {
+                method: "POST",
+                body: formData2,
+              })
+                .then((response) => {
+                  loader2.style.display = "none";
+                  if (!response.ok) {
+                    throw new Error("Network response was not ok");
+                  }
+                  return response.blob(); // Get the audio blob from the response
+                })
+                .then((audioBlob2) => {
+                  const audioUrl2 = URL.createObjectURL(audioBlob2);
+                  const audioPlayer2 = document.getElementById("audio-player2");
+                  audioPlayer2.src = audioUrl2; // Set the source to the blob URL
+                  audioPlayer2.style.display = "block"; // Show the audio player
+                  audioPlayer2.play(); // Play the audio
+                })
+                .catch((error) => {
+                  console.error(
+                    "There was a problem with the fetch operation:",
+                    error
+                  );
+                });
+            }
+
+            // document
+            //   .getElementById("getMemoryButton2")
+            //   .addEventListener("click", async function () {
+
+            //     try {
+            //       const response = await fetch("/new_chat2", {
+            //         method: "POST",
+            //         headers: {
+            //           "Content-Type": "application/x-www-form-urlencoded",
+            //         },
+            //         body: new URLSearchParams({
+            //           message: "Tell me about a memory",
+            //         }),
+            //       });
+
+            //       const data = await response.json();
+            //       // Handle the response similar to how you handle audio responses
+            //       appendMessage("assistant", data.reply);
+            //     } catch (error) {
+            //       console.error("Error:", error);
+            //     }
+            //   });
+            document
+              .getElementById("getMemoryButton2")
+              .addEventListener("click", function () {
+                // Update UI to indicate processing
+                loader2.style.display = "inline-block";
+                statusText2.textContent = "Remembering moments...";
+
+                fetch("/new_chat2", {
+                  method: "POST",
+                  headers: {
+                    // No need to set Content-Type for a simple POST without body
+                  },
+                  // If your endpoint requires a message, include it in the body
+                  body: new URLSearchParams({
+                    message: "Tell me about a memory",
+                  }),
+                })
+                  .then((response) => {
+                    loader2.style.display = "none";
+                    if (!response.ok) {
+                      throw new Error("Network response was not ok");
+                    }
+                    return response.blob(); // Get the audio blob from the response
+                  })
+                  .then((audioBlob) => {
+                    // Create a Blob with the correct MIME type
+                    const audioBlobWithType = new Blob([audioBlob], {
+                      type: "audio/wav",
+                    });
+                    const audioUrl = URL.createObjectURL(audioBlobWithType);
+                    const audioPlayer =
+                      document.getElementById("audio-player2");
+                    audioPlayer.src = audioUrl; // Set the source to the blob URL
+                    audioPlayer.style.display = "block"; // Show the audio player
+                    audioPlayer.play(); // Play the audio
+
+                    // Optional: Update status text
+                    statusText2.textContent = "Sharing memory.";
+                  })
+                  .catch((error) => {
+                    console.error("Error fetching memory:", error);
+                    statusText2.textContent = "Error fetching memory.";
+                  });
+              });
           </script>
         </div>
       </div>
@@ -269,9 +490,23 @@
             height="240"
           ></video>
         </div>
-        <div id="emotions-box" style="margin-top: 10px; text-align: center">
-          <p><strong>Top Emotions:</strong></p>
-        </div>
+        <p
+          style="
+            padding: 10px;
+            background-color: #9fc8b8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+          "
+        >
+          Currently Experiencing
+        </p>
+        <div
+          id="emotions-box"
+          style="margin-top: 10px; text-align: center"
+        ></div>
         <script>
           const API_KEY = "ZG68MoAwkJmO200Jl1EkTKC3SfGNI4r2dpKlA2FjcplK8cE4";
           const WS_URL = `wss://api.hume.ai/v0/stream/models?apiKey=${API_KEY}`;
@@ -324,7 +559,6 @@
               }
             }, 1000 / 1); // 5 FPS
           }
-
           function displayTopEmotions(predictions) {
             const emotions = predictions[0].emotions;
 
@@ -343,7 +577,6 @@
               "Anxiety",
               "Fear",
               "Shame",
-              "Confusion",
               "Doubt",
               "Disappointment",
               "Sadness",
@@ -353,6 +586,8 @@
               "Horror",
             ];
 
+            let alertTriggered = false;
+
             // Create and display emotion boxes
             topEmotions.forEach((emotion) => {
               const emotionElement = document.createElement("div");
@@ -361,6 +596,38 @@
               // Add 'negative' class if the emotion is negative
               if (negativeEmotions.includes(emotion.name)) {
                 emotionElement.classList.add("negative");
+
+                // Trigger WhatsApp alert if a negative emotion is found
+                if (!alertTriggered) {
+                  alertTriggered = true; // Prevent multiple alerts
+
+                  // Send WhatsApp message via backend
+                  fetch("http://127.0.0.1:5000/send-whatsapp", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      message: `Signs of distress: ${emotion.name} (${(
+                        emotion.score * 100
+                      ).toFixed(
+                        2
+                      )}%). It would be a good idea to check on her/him and make sure the situation doesn't worsen.`,
+                    }),
+                  })
+                    .then((response) => {
+                      if (!response.ok) {
+                        throw new Error("Failed to send WhatsApp message");
+                      }
+                      return response.json();
+                    })
+                    .then((data) => {
+                      console.log("WhatsApp message sent:", data);
+                    })
+                    .catch((error) => {
+                      console.error("Error sending WhatsApp message:", error);
+                    });
+                }
               }
 
               emotionElement.textContent = `${emotion.name}: ${(
@@ -383,6 +650,64 @@
               console.error("Error parsing response:", error);
             }
           }
+
+          //   function displayTopEmotions(predictions) {
+          //     const emotions = predictions[0].emotions;
+
+          //     // Sort emotions by score in descending order and take the top 3
+          //     const topEmotions = emotions
+          //       .sort((a, b) => b.score - a.score)
+          //       .slice(0, 3);
+
+          //     // Clear previous emotions
+          //     const emotionsBox = document.getElementById("emotions-box");
+          //     emotionsBox.innerHTML = ""; // Clear previous content
+
+          //     // Define negative emotions
+          //     const negativeEmotions = [
+          //       "Distress",
+          //       "Anxiety",
+          //       "Fear",
+          //       "Shame",
+          //       "Doubt",
+          //       "Disappointment",
+          //       "Sadness",
+          //       "Embarrassment",
+          //       "Pain",
+          //       "Anger",
+          //       "Horror",
+          //     ];
+
+          //     // Create and display emotion boxes
+          //     topEmotions.forEach((emotion) => {
+          //       const emotionElement = document.createElement("div");
+          //       emotionElement.classList.add("emotion-box");
+
+          //       // Add 'negative' class if the emotion is negative
+          //       if (negativeEmotions.includes(emotion.name)) {
+          //         emotionElement.classList.add("negative");
+          //       }
+
+          //       emotionElement.textContent = `${emotion.name}: ${(
+          //         emotion.score * 100
+          //       ).toFixed(2)} %`;
+          //       emotionsBox.appendChild(emotionElement);
+          //     });
+          //   }
+
+          //   function handleHumeResponse(data) {
+          //     try {
+          //       const response = JSON.parse(data);
+          //       console.log("Hume AI Response:", response);
+
+          //       // Assuming the response has 'predictions' array in 'face'
+          //       const predictions = response.face.predictions;
+
+          //       displayTopEmotions(predictions);
+          //     } catch (error) {
+          //       console.error("Error parsing response:", error);
+          //     }
+          //   }
 
           startVideoStream();
         </script>
